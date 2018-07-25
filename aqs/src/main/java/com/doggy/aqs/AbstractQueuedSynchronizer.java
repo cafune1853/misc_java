@@ -233,21 +233,27 @@ public abstract class AbstractQueuedSynchronizer
      *
      * CLH队列需要一个dummy节点进行初始化，head和tail初始化都指向该节点。但我们并不一开始创建AQS队列时就初始化，而是延迟到第一个enq操作再初始化。
      *
-     * 在ConditionObject中的等待节点也是用的该节点，但用的是nextWaiter,由于改变该引用的操作都在独占锁内部，所以是线程安全的，只要简单设置即可（该引用不需要是volatile）。
+     * 在ConditionObject中的等待节点也是用的这个类，但用的是nextWaiter进行节点连接,由于改变该引用的操作都在独占锁内部，
+     * 所以是线程安全的，只要简单设置即可（该引用不需要是volatile）。
      * await时，会往Condition queue中插入一个等待节点，其节点状态为CONDITION.signal操作则会将Condition queue的第一个节点移入同步队列并标识为status=0.
      * 这些操作都是在排他锁内操作的，所以是线程安全的。
      */
     static final class Node {
-        /** Marker to indicate a node is waiting in shared mode */
+        /**
+         * nextWaiter会初始化为以下两个值中的其中一个，
+         * 当为排他模式（即支持ConditionObject）时会设置为SHARED
+         * 当为共享模式时会设置为EXCLUSIVE.
+         */
+        /** 标记实例，标识当前节点为共享模式 */
         static final Node SHARED = new Node();
-        /** Marker to indicate a node is waiting in exclusive mode */
+        /** 标记一个节点是处于排他模式*/
         static final Node EXCLUSIVE = null;
 
-        /** waitStatus value to indicate thread has cancelled */
+        /** 用于表示当前节点（线程）已取消*/
         static final int CANCELLED =  1;
-        /** waitStatus value to indicate successor's thread needs unparking */
+        /** 表示需要unpark当前节点的后继节点 */
         static final int SIGNAL    = -1;
-        /** waitStatus value to indicate thread is waiting on condition */
+        /** 表示当前节点在Condition queue中 */
         static final int CONDITION = -2;
         /**
          * waitStatus value to indicate the next acquireShared should
