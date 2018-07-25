@@ -485,6 +485,7 @@ public abstract class AbstractQueuedSynchronizer
                 final Node p = node.predecessor();
                 // 如果当前节点的前驱节点为head 且 尝试获得锁成功则设置head并返回当前线程的中断状态
                 if (p == head && tryAcquire(arg)) {
+                    // setHead时会把当前节点绑定的线程置为null
                     setHead(node);
                     // 帮助GC
                     p.next = null;
