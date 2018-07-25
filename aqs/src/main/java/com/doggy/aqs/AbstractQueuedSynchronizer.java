@@ -368,33 +368,21 @@ public abstract class AbstractQueuedSynchronizer
     private volatile int state;
 
     /**
-     * Returns the current value of synchronization state.
-     * This operation has memory semantics of a {@code volatile} read.
-     * @return current state value
+     * 返回内部的当前同步状态，该操作有 volatile read 内存语义。
      */
     protected final int getState() {
         return state;
     }
 
     /**
-     * Sets the value of synchronization state.
-     * This operation has memory semantics of a {@code volatile} write.
-     * @param newState the new state value
+     * 原子设置内部的同步状态，该操作有 volatile write 内存语义。
      */
     protected final void setState(int newState) {
         state = newState;
     }
 
     /**
-     * Atomically sets synchronization state to the given updated
-     * value if the current state value equals the expected value.
-     * This operation has memory semantics of a {@code volatile} read
-     * and write.
-     *
-     * @param expect the expected value
-     * @param update the new value
-     * @return {@code true} if successful. False return indicates that the actual
-     *         value was not equal to the expected value.
+     * CAS原子设置内部的同步状态，该操作有 volatile read 以及 volatile write 内存语义。
      */
     protected final boolean compareAndSetState(int expect, int update) {
         // See below for intrinsics setup to support this
@@ -404,26 +392,28 @@ public abstract class AbstractQueuedSynchronizer
     // Queuing utilities
 
     /**
-     * The number of nanoseconds for which it is faster to spin
-     * rather than to use timed park. A rough estimate suffices
-     * to improve responsiveness with very short timeouts.
+     * 该值用于提供一个粗糙的优化策略。当需要挂起的时长t大于该值时，使用LockSupport#parkNanos(t)
+     * 阻塞挂起线程，当t小于该值时则认为挂起的线程所带来的线程切换代价大于自旋等待的代价，所以会直接自旋。
      */
     static final long spinForTimeoutThreshold = 1000L;
 
     /**
-     * Inserts node into queue, initializing if necessary. See picture above.
+     * 往同步队列中插入一个等待节点，必要时执行dummy节点初始化。
      * @param node the node to insert
      * @return node's predecessor
      */
     private Node enq(final Node node) {
         for (;;) {
             Node t = tail;
-            if (t == null) { // Must initialize
+            // 当tail节点为null时表示同步队列未初始化，此时执行初始化将head与tail节点均指向dummy节点。
+            if (t == null) {
                 if (compareAndSetHead(new Node()))
                     tail = head;
             } else {
                 node.prev = t;
+                // CAS 设置tail节点，一旦tail设置成功则表示成功加入到队列了。
                 if (compareAndSetTail(t, node)) {
+                    // 设置next节点，由于此处存在着争用。
                     t.next = node;
                     return t;
                 }
@@ -432,14 +422,14 @@ public abstract class AbstractQueuedSynchronizer
     }
 
     /**
-     * Creates and enqueues node for current thread and given mode.
+     * 通过当前线程创建一个等待节点并将其加入到等待队列中。
      *
      * @param mode Node.EXCLUSIVE for exclusive, Node.SHARED for shared
      * @return the new node
      */
     private Node addWaiter(Node mode) {
         Node node = new Node(Thread.currentThread(), mode);
-        // Try the fast path of enq; backup to full enq on failure
+        // 提供一个快速路径插入队列，如果失败会使用enq()进行全路径插入。
         Node pred = tail;
         if (pred != null) {
             node.prev = pred;
@@ -453,9 +443,8 @@ public abstract class AbstractQueuedSynchronizer
     }
 
     /**
-     * Sets head of queue to be node, thus dequeuing. Called only by
-     * acquire methods.  Also nulls out unused fields for sake of GC
-     * and to suppress unnecessary signals and traversals.
+     * 将node设置为同步队列的首节点，该方法只会在tryAcquire成功之后调用，也就是说调用该方法的node的waitStatus不能为CANCELLED.
+     * 该操作同时会清除节点的prev引用以帮助GC.
      *
      * @param node the node
      */
@@ -463,6 +452,191 @@ public abstract class AbstractQueuedSynchronizer
         head = node;
         node.thread = null;
         node.prev = null;
+    }
+
+    /**
+     * 在排他模式下执行acquire[即acquire成功后不需要尝试让后继节点也尝试acquire].
+     * 该acquire期间如果发现线程中断则只是简单的设置线程中断标志而不抛出异常。
+     * 该方法常用于Lock#lock方法。
+     *
+     * @param arg the acquire argument.  该值将直接传递给tryAcquire(),具体的
+     *            意义与实际同步器相关。
+     */
+    public final void acquire(int arg) {
+        // 先调用tryAcquire再尝试入同步队列，所以可以实现非公平锁。
+        if (!tryAcquire(arg) &&
+                acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+            selfInterrupt();
+    }
+
+
+    /**
+     * 尝试获得锁、挂起线程等操作。
+     *
+     * @param node the node
+     * @param arg the acquire argument
+     * @return {@code true} if interrupted while waiting
+     */
+    final boolean acquireQueued(final Node node, int arg) {
+        boolean failed = true;
+        try {
+            boolean interrupted = false;
+            for (;;) {
+                final Node p = node.predecessor();
+                // 如果当前节点的前驱节点为head 且 尝试获得锁成功则设置head并返回当前线程的中断状态
+                if (p == head && tryAcquire(arg)) {
+                    setHead(node);
+                    // 帮助GC
+                    p.next = null;
+                    failed = false;
+                    return interrupted;
+                }
+                // 检测、标记前驱节点的状态，可能的话挂起当前线程并检测线程的中断状态。
+                if (shouldParkAfterFailedAcquire(p, node) &&
+                        parkAndCheckInterrupt())
+                    interrupted = true;
+            }
+        } finally {
+            // acquire失败则将该节点标记为CANCELLED并尝试唤醒successor
+            if (failed)
+                cancelAcquire(node);
+        }
+    }
+
+    /**
+     * 检测一个节点在tryAcquire失败后是否需要挂起（即前驱节点的ws是否为SIGNAL）.
+     * Checks and updates status for a node that failed to acquire.
+     * Returns true if thread should block. This is the main signal
+     * control in all acquire loops.  Requires that pred == node.prev.
+     *
+     * @param pred node's predecessor holding status
+     * @param node the node
+     * @return {@code true} if thread should block
+     */
+    private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
+        int ws = pred.waitStatus;
+        if (ws == Node.SIGNAL)
+            /*
+             * 在tryAcquire失败之后，检测到其前驱节点已经设置为SIGNAL,这表示我们可以安全地park当前线程了。
+             * 当prev节点release之后，其会unpark()当前节点。
+             */
+            return true;
+        if (ws > 0) {
+            /*
+             * 如果前驱节点为CANCELLED状态则重建同步队列，移除这些取消的节点。
+             */
+            do {
+                node.prev = pred = pred.prev;
+            } while (pred.waitStatus > 0);
+            pred.next = node;
+        } else {
+            /*
+             * 此时前驱节点的状态只可能是0或者PROPAGATE.在这里我们通过CAS尝试将其设置为SIGNAL,
+             * 但我们不会马上认为该节点可以park了，该方法调用者需要再次检测是否能够acquire成功，
+             * 以避免我们将一个已经release的节点标记为SIGNAL,导致当前节点一直无法往下获得锁。
+             */
+            compareAndSetWaitStatus(pred, ws, Node.SIGNAL);
+        }
+        return false;
+    }
+
+    /**
+     * 可中断的acquire方法，在acquire过程中检测到中断会抛出InterruptedException.
+     * 与acquire方法的不同在于1.先检测线程是否中断 2. 使用doAcquireInterruptibly 代替acquireQueued().
+     *
+     * @param arg the acquire argument.  This value is conveyed to
+     *        {@link #tryAcquire} but is otherwise uninterpreted and
+     *        can represent anything you like.
+     * @throws InterruptedException if the current thread is interrupted
+     */
+    public final void acquireInterruptibly(int arg)
+            throws InterruptedException {
+        if (Thread.interrupted())
+            throw new InterruptedException();
+        if (!tryAcquire(arg))
+            doAcquireInterruptibly(arg);
+    }
+
+    /**
+     * 与acquireQueued唯一的不同在于直接抛出异常而不是给线程标记中断。
+     * @param arg the acquire argument
+     */
+    private void doAcquireInterruptibly(int arg)
+            throws InterruptedException {
+        final Node node = addWaiter(Node.EXCLUSIVE);
+        boolean failed = true;
+        try {
+            for (;;) {
+                final Node p = node.predecessor();
+                if (p == head && tryAcquire(arg)) {
+                    setHead(node);
+                    p.next = null; // help GC
+                    failed = false;
+                    return;
+                }
+                // 与acquireQueued唯一的不同在于会抛出异常。
+                if (shouldParkAfterFailedAcquire(p, node) &&
+                        parkAndCheckInterrupt())
+                    // 中断之后直接抛出异常
+                    throw new InterruptedException();
+            }
+        } finally {
+            if (failed)
+                cancelAcquire(node);
+        }
+    }
+
+    /**
+     * 取消一个节点的acquire、从同步队列中移除该同步节点并尝试唤醒其后继节点。
+     *
+     * @param node the node
+     */
+    private void cancelAcquire(Node node) {
+        // Ignore if node doesn't exist
+        if (node == null)
+            return;
+
+        node.thread = null;
+
+        // 向前找到一个不为CANCELLED的前驱节点
+        Node pred = node.prev;
+        while (pred.waitStatus > 0)
+            node.prev = pred = pred.prev;
+
+        // predNext is the apparent node to unsplice. CASes below will
+        // fail if not, in which case, we lost race vs another cancel
+        // or signal, so no further action is necessary.
+        Node predNext = pred.next;
+
+        // Can use unconditional write instead of CAS here.
+        // After this atomic step, other Nodes can skip past us.
+        // Before, we are free of interference from other threads.
+        node.waitStatus = Node.CANCELLED;
+
+        // 如果我们在tail则表示没有需要唤醒的节点，此时直接移除同步队列即可。
+        if (node == tail && compareAndSetTail(node, pred)) {
+            compareAndSetNext(pred, predNext, null);
+        } else {
+            int ws;
+            // 1. pred != head只是一个预判断，
+            // 2. ws = pred.waitStatus) == Node.SIGNAL || （ws <= 0 && compareAndSetWaitStatus(pred, ws, Node.SIGNAL))
+            // 该判断会尝试将pred节点的状态设为SIGNAL
+            // 3. pred.next != null 该条件则表明了pred节点的setHead还没调用成功（setHead在tryAcquire成功后release之前调用），
+            // 所以之前设置的SIGNAL标志是有效的，此时可以简单地移除CANCELLED节点而不需要唤醒其后继节点。
+            if (pred != head &&
+                    ((ws = pred.waitStatus) == Node.SIGNAL ||
+                            (ws <= 0 && compareAndSetWaitStatus(pred, ws, Node.SIGNAL))) &&
+                    pred.thread != null) {
+                Node next = node.next;
+                if (next != null && next.waitStatus <= 0)
+                    compareAndSetNext(pred, predNext, next);
+            } else {
+                unparkSuccessor(node);
+            }
+
+            // help GC
+            node.next = node;
+        }
     }
 
     /**
@@ -567,175 +741,18 @@ public abstract class AbstractQueuedSynchronizer
         }
     }
 
-    // Utilities for various versions of acquire
-
-    /**
-     * Cancels an ongoing attempt to acquire.
-     *
-     * @param node the node
-     */
-    private void cancelAcquire(Node node) {
-        // Ignore if node doesn't exist
-        if (node == null)
-            return;
-
-        node.thread = null;
-
-        // Skip cancelled predecessors
-        Node pred = node.prev;
-        while (pred.waitStatus > 0)
-            node.prev = pred = pred.prev;
-
-        // predNext is the apparent node to unsplice. CASes below will
-        // fail if not, in which case, we lost race vs another cancel
-        // or signal, so no further action is necessary.
-        Node predNext = pred.next;
-
-        // Can use unconditional write instead of CAS here.
-        // After this atomic step, other Nodes can skip past us.
-        // Before, we are free of interference from other threads.
-        node.waitStatus = Node.CANCELLED;
-
-        // If we are the tail, remove ourselves.
-        if (node == tail && compareAndSetTail(node, pred)) {
-            compareAndSetNext(pred, predNext, null);
-        } else {
-            // If successor needs signal, try to set pred's next-link
-            // so it will get one. Otherwise wake it up to propagate.
-            int ws;
-            if (pred != head &&
-                ((ws = pred.waitStatus) == Node.SIGNAL ||
-                 (ws <= 0 && compareAndSetWaitStatus(pred, ws, Node.SIGNAL))) &&
-                pred.thread != null) {
-                Node next = node.next;
-                if (next != null && next.waitStatus <= 0)
-                    compareAndSetNext(pred, predNext, next);
-            } else {
-                unparkSuccessor(node);
-            }
-
-            node.next = node; // help GC
-        }
-    }
-
-    /**
-     * Checks and updates status for a node that failed to acquire.
-     * Returns true if thread should block. This is the main signal
-     * control in all acquire loops.  Requires that pred == node.prev.
-     *
-     * @param pred node's predecessor holding status
-     * @param node the node
-     * @return {@code true} if thread should block
-     */
-    private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
-        int ws = pred.waitStatus;
-        if (ws == Node.SIGNAL)
-            /*
-             * This node has already set status asking a release
-             * to signal it, so it can safely park.
-             */
-            return true;
-        if (ws > 0) {
-            /*
-             * Predecessor was cancelled. Skip over predecessors and
-             * indicate retry.
-             */
-            do {
-                node.prev = pred = pred.prev;
-            } while (pred.waitStatus > 0);
-            pred.next = node;
-        } else {
-            /*
-             * waitStatus must be 0 or PROPAGATE.  Indicate that we
-             * need a signal, but don't park yet.  Caller will need to
-             * retry to make sure it cannot acquire before parking.
-             */
-            compareAndSetWaitStatus(pred, ws, Node.SIGNAL);
-        }
-        return false;
-    }
-
-    /**
-     * Convenience method to interrupt current thread.
-     */
     static void selfInterrupt() {
         Thread.currentThread().interrupt();
     }
 
     /**
-     * Convenience method to park and then check if interrupted
-     *
-     * @return {@code true} if interrupted
+     * 由于使用了Thread#interrupted(),所以该方法会清空线程的中断状态，
+     * 所以调用者必须正确地处理线程中断的情况。
+     * @return true表示线程已中断 false表示未中断
      */
     private final boolean parkAndCheckInterrupt() {
         LockSupport.park(this);
         return Thread.interrupted();
-    }
-
-    /*
-     * Various flavors of acquire, varying in exclusive/shared and
-     * control modes.  Each is mostly the same, but annoyingly
-     * different.  Only a little bit of factoring is possible due to
-     * interactions of exception mechanics (including ensuring that we
-     * cancel if tryAcquire throws exception) and other control, at
-     * least not without hurting performance too much.
-     */
-
-    /**
-     * Acquires in exclusive uninterruptible mode for thread already in
-     * queue. Used by condition wait methods as well as acquire.
-     *
-     * @param node the node
-     * @param arg the acquire argument
-     * @return {@code true} if interrupted while waiting
-     */
-    final boolean acquireQueued(final Node node, int arg) {
-        boolean failed = true;
-        try {
-            boolean interrupted = false;
-            for (;;) {
-                final Node p = node.predecessor();
-                if (p == head && tryAcquire(arg)) {
-                    setHead(node);
-                    p.next = null; // help GC
-                    failed = false;
-                    return interrupted;
-                }
-                if (shouldParkAfterFailedAcquire(p, node) &&
-                    parkAndCheckInterrupt())
-                    interrupted = true;
-            }
-        } finally {
-            if (failed)
-                cancelAcquire(node);
-        }
-    }
-
-    /**
-     * Acquires in exclusive interruptible mode.
-     * @param arg the acquire argument
-     */
-    private void doAcquireInterruptibly(int arg)
-        throws InterruptedException {
-        final Node node = addWaiter(Node.EXCLUSIVE);
-        boolean failed = true;
-        try {
-            for (;;) {
-                final Node p = node.predecessor();
-                if (p == head && tryAcquire(arg)) {
-                    setHead(node);
-                    p.next = null; // help GC
-                    failed = false;
-                    return;
-                }
-                if (shouldParkAfterFailedAcquire(p, node) &&
-                    parkAndCheckInterrupt())
-                    throw new InterruptedException();
-            }
-        } finally {
-            if (failed)
-                cancelAcquire(node);
-        }
     }
 
     /**
@@ -1017,45 +1034,7 @@ public abstract class AbstractQueuedSynchronizer
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * Acquires in exclusive mode, ignoring interrupts.  Implemented
-     * by invoking at least once {@link #tryAcquire},
-     * returning on success.  Otherwise the thread is queued, possibly
-     * repeatedly blocking and unblocking, invoking {@link
-     * #tryAcquire} until success.  This method can be used
-     * to implement method {@link Lock#lock}.
-     *
-     * @param arg the acquire argument.  This value is conveyed to
-     *        {@link #tryAcquire} but is otherwise uninterpreted and
-     *        can represent anything you like.
-     */
-    public final void acquire(int arg) {
-        if (!tryAcquire(arg) &&
-            acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
-            selfInterrupt();
-    }
 
-    /**
-     * Acquires in exclusive mode, aborting if interrupted.
-     * Implemented by first checking interrupt status, then invoking
-     * at least once {@link #tryAcquire}, returning on
-     * success.  Otherwise the thread is queued, possibly repeatedly
-     * blocking and unblocking, invoking {@link #tryAcquire}
-     * until success or the thread is interrupted.  This method can be
-     * used to implement method {@link Lock#lockInterruptibly}.
-     *
-     * @param arg the acquire argument.  This value is conveyed to
-     *        {@link #tryAcquire} but is otherwise uninterpreted and
-     *        can represent anything you like.
-     * @throws InterruptedException if the current thread is interrupted
-     */
-    public final void acquireInterruptibly(int arg)
-            throws InterruptedException {
-        if (Thread.interrupted())
-            throw new InterruptedException();
-        if (!tryAcquire(arg))
-            doAcquireInterruptibly(arg);
-    }
 
     /**
      * Attempts to acquire in exclusive mode, aborting if interrupted,
