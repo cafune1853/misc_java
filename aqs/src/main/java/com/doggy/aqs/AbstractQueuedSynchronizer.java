@@ -262,38 +262,29 @@ public abstract class AbstractQueuedSynchronizer
         static final int PROPAGATE = -3;
 
         /**
-         * Status field, taking on only the values:
-         *   SIGNAL:     The successor of this node is (or will soon be)
-         *               blocked (via park), so the current node must
-         *               unpark its successor when it releases or
-         *               cancels. To avoid races, acquire methods must
-         *               first indicate they need a signal,
-         *               then retry the atomic acquire, and then,
-         *               on failure, block.
-         *   CANCELLED:  This node is cancelled due to timeout or interrupt.
-         *               Nodes never leave this state. In particular,
-         *               a thread with cancelled node never again blocks.
-         *   CONDITION:  This node is currently on a condition queue.
-         *               It will not be used as a sync queue node
-         *               until transferred, at which time the status
-         *               will be set to 0. (Use of this value here has
-         *               nothing to do with the other uses of the
-         *               field, but simplifies mechanics.)
+         *   waitStatus的取值只可能是以下几个
+         *   SIGNAL:     表明当前节点的后继节点已阻塞或者很快就会进入阻塞状态，
+         *               所以当前节点在release或者cancel时必须要unpark其后继节点。
+         *               为了避免竞争导致线程不被唤醒[前一个节点已经release完成，其后继再将其标记为SIGNAL]，
+         *               一个acquire操作是这样的，
+         *               tryAcquire failed -> atomic set prev.waitStatus to SIGNAL
+         *               -> tryAcquire failed again -> blocked.
+         *   CANCELLED:  由于超时或者中断（interrupt）,当前节点已被取消。
+         *               一个节点进入该状态后就再也不会离开这个状态。
+         *   CONDITION:  当前节点在一个等待队列（Condition queue）中。
+         *               它不会被用作同步队列的节点，除非其被转入到同步队列中（signal/signalAll）,
+         *               当被转入到同步队列时，waitStatus重置为0
          *   PROPAGATE:  A releaseShared should be propagated to other
          *               nodes. This is set (for head node only) in
          *               doReleaseShared to ensure propagation
          *               continues, even if other operations have
          *               since intervened.
-         *   0:          None of the above
+         *   0:          初始化状态，一个节点刚被加入同步队列时的状态，一个节点刚从Condition queue转移到同步队列时也会从CONDITION 变为0
          *
-         * The values are arranged numerically to simplify use.
-         * Non-negative values mean that a node doesn't need to
-         * signal. So, most code doesn't need to check for particular
-         * values, just for sign.
+         *   由上可知非负值（0 / CANCELLED）表示当前节点释放时不需要unpark其后继节点。
          *
-         * The field is initialized to 0 for normal sync nodes, and
-         * CONDITION for condition nodes.  It is modified using CAS
-         * (or when possible, unconditional volatile writes).
+         *   waitStatus在同步队列中被初始化为0， 在条件队列（Condition queue）中被初始化为CONDITION
+         *   通过CAS / volatile write 可以修改该值。
          */
         volatile int waitStatus;
 
