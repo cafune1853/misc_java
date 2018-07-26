@@ -571,7 +571,8 @@ public abstract class AbstractQueuedSynchronizer
                 final Node p = node.predecessor();
                 if (p == head && tryAcquire(arg)) {
                     setHead(node);
-                    p.next = null; // help GC
+                    p.next = null;
+                    // help GC
                     failed = false;
                     return;
                 }
