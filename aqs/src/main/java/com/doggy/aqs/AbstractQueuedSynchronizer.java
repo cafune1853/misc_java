@@ -1120,6 +1120,18 @@ public abstract class AbstractQueuedSynchronizer
             return list;
         }
     }
+    
+    /**
+     *  判断当前线程是否在排他模式下持有锁，该方法只在ConditionObject中使用，
+     *  所以对于不需要Condition wait功能的锁可以不重写该方法。
+     *
+     * @return {@code true} if synchronization is held exclusively;
+     *         {@code false} otherwise
+     * @throws UnsupportedOperationException if conditions are not supported
+     */
+    protected boolean isHeldExclusively() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Release action for shared mode -- signals successor and ensures
@@ -1204,7 +1216,21 @@ public abstract class AbstractQueuedSynchronizer
         LockSupport.park(this);
         return Thread.interrupted();
     }
-
+    
+    /*************************  SHARED MODE ***************************/
+    
+    /**
+     *  共享模式下获得锁，不可中断。
+     *  与排他模式最大的不同在于，在获得锁成功后，后唤醒其后继节点。
+     * @param arg the acquire argument.  This value is conveyed to
+     *        {@link #tryAcquireShared} but is otherwise uninterpreted
+     *        and can represent anything you like.
+     */
+    public final void acquireShared(int arg) {
+        if (tryAcquireShared(arg) < 0)
+            doAcquireShared(arg);
+    }
+    
     /**
      * Acquires in shared uninterruptible mode.
      * @param arg the acquire argument
@@ -1219,6 +1245,7 @@ public abstract class AbstractQueuedSynchronizer
                 if (p == head) {
                     int r = tryAcquireShared(arg);
                     if (r >= 0) {
+                        // 与排他模式最大的不同在于，在获得锁成功后，会尝试让其后继节点也试图获得锁
                         setHeadAndPropagate(node, r);
                         p.next = null; // help GC
                         if (interrupted)
@@ -1425,41 +1452,6 @@ public abstract class AbstractQueuedSynchronizer
      */
     protected boolean tryReleaseShared(int arg) {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Returns {@code true} if synchronization is held exclusively with
-     * respect to the current (calling) thread.  This method is invoked
-     * upon each call to a non-waiting {@link ConditionObject} method.
-     * (Waiting methods instead invoke {@link #release}.)
-     *
-     * <p>The default implementation throws {@link
-     * UnsupportedOperationException}. This method is invoked
-     * internally only within {@link ConditionObject} methods, so need
-     * not be defined if conditions are not used.
-     *
-     * @return {@code true} if synchronization is held exclusively;
-     *         {@code false} otherwise
-     * @throws UnsupportedOperationException if conditions are not supported
-     */
-    protected boolean isHeldExclusively() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Acquires in shared mode, ignoring interrupts.  Implemented by
-     * first invoking at least once {@link #tryAcquireShared},
-     * returning on success.  Otherwise the thread is queued, possibly
-     * repeatedly blocking and unblocking, invoking {@link
-     * #tryAcquireShared} until success.
-     *
-     * @param arg the acquire argument.  This value is conveyed to
-     *        {@link #tryAcquireShared} but is otherwise uninterpreted
-     *        and can represent anything you like.
-     */
-    public final void acquireShared(int arg) {
-        if (tryAcquireShared(arg) < 0)
-            doAcquireShared(arg);
     }
 
     /**
