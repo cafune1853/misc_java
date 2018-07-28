@@ -728,7 +728,7 @@ public abstract class AbstractQueuedSynchronizer
     }
 
     /**
-     * 如果有有效的后继的节点则唤醒该节点。
+     * 如果有有效(状态为PROPAGATE/SIGNAL)的后继的节点则唤醒该节点。
      *
      * @param node the node
      */
@@ -1169,9 +1169,7 @@ public abstract class AbstractQueuedSynchronizer
     }
 
     /**
-     * Sets head of queue, and checks if successor may be waiting
-     * in shared mode, if so propagating if either propagate > 0 or
-     * PROPAGATE status was set.
+     * 设置当前同步队列的head,然后检测其后继节点是否在共享模式下等待，如果是则尝试唤醒其后继。
      *
      * @param node the node
      * @param propagate the return value from a tryAcquireShared
@@ -1198,6 +1196,7 @@ public abstract class AbstractQueuedSynchronizer
         if (propagate > 0 || h == null || h.waitStatus < 0 ||
             (h = head) == null || h.waitStatus < 0) {
             Node s = node.next;
+            // 后继节点是一个未知节点或者是一个共享节点则尝试唤醒。
             if (s == null || s.isShared())
                 doReleaseShared();
         }
