@@ -37,6 +37,7 @@
         <module>datastructure</module>
         <module>loadbalance</module>
         <module>lrucache</module>
+        <module>misctest</module>
     </modules>
 
     <dependencies>
