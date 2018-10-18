@@ -38,6 +38,7 @@
         <module>loadbalance</module>
         <module>lrucache</module>
         <module>misctest</module>
+      <module>sort</module>
     </modules>
 
     <dependencies>
