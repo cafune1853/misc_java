@@ -24,18 +24,15 @@ public class QuickSortStrategy implements SortStrategy {
         int pivotValue = array[pivotIndex];
         int i = p;
         int j = q;
+        // 从头到尾遍历并交换
         while (i != j){
             if (array[i] <= pivotValue){
                 i++;
-                if(i == j){
-                    break;
-                }
+                continue;
             }
             if (array[j] >= pivotValue){
                 j--;
-                if(i == j){
-                    break;
-                }
+                continue;
             }
             if(array[i] > pivotValue && array[j] < pivotValue){
                 int tmp = array[i];
@@ -44,33 +41,26 @@ public class QuickSortStrategy implements SortStrategy {
             }
         }
         // set pivotValue to correct index and get that index
+        int correctIndex;
         if(i > pivotIndex){
             if(array[i] > pivotValue){
-                int tmp = array[i - 1];
-                array[i - 1] = pivotValue;
-                array[pivotIndex] = tmp;
-                return i - 1;
+                correctIndex = i -1;
             }else{
-                int tmp = array[i];
-                array[i] = pivotValue;
-                array[pivotIndex] = tmp;
-                return i;
+                correctIndex = i;
             }
-        }
-        if(i < pivotIndex){
-            if(array[i] > pivotValue){
-                int tmp = array[i];
-                array[i] = pivotValue;
-                array[pivotIndex] = tmp;
-                return i;
+        }else if(i < pivotIndex){
+            if (array[i] > pivotValue){
+                correctIndex = i;
             }else{
-                int tmp = array[i + 1];
-                array[i + 1] = tmp;
-                array[pivotIndex] = tmp;
-                return i + 1;
+                correctIndex = i + 1;
             }
+        }else{
+            correctIndex = i;
         }
-        return i;
+        int tmp = array[correctIndex];
+        array[correctIndex] = pivotValue;
+        array[pivotIndex] = tmp;
+        return correctIndex;
     }
 
     private static int pickPivot(int start, int end){
