@@ -9,10 +9,12 @@ public class Test {
         testArraySort(new BubbleSortStrategy());
         testArraySort(new SelectSortStrategy());
         testArraySort(new MergeSortStrategy());
+        testArraySort(new QuickSortStrategy());
     }
 
     public static void testArraySort(SortStrategy sortStrategy){
         testOneArraySort(new int[]{1, 3, 7, 5, 6, 4, 9}, sortStrategy, new int[]{1, 3, 4, 5, 6, 7, 9});
+        testOneArraySort(new int[]{1, 3, 3, 3, 6, 3, 9}, sortStrategy, new int[]{1, 3, 3, 3, 3, 6, 9});
         testOneArraySort(new int[]{}, sortStrategy, new int[]{});
         testOneArraySort(new int[]{1}, sortStrategy, new int[]{1});
         testOneArraySort(new int[]{2, 1}, sortStrategy, new int[]{1, 2});
