@@ -8,6 +8,7 @@ public class Test {
         testArraySort(new InsertSortStrategy());
         testArraySort(new BubbleSortStrategy());
         testArraySort(new SelectSortStrategy());
+        testArraySort(new MergeSortStrategy());
     }
 
     public static void testArraySort(SortStrategy sortStrategy){
