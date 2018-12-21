@@ -21,7 +21,7 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  * 稳定性： 不稳定
  */
-public class QuickSortStrategy implements SortStrategy {
+public class QuickSortStrategy1 implements SortStrategy {
     @Override
     public void sort(int[] array) {
         quickSort(array, 0, array.length - 1);
@@ -36,47 +36,28 @@ public class QuickSortStrategy implements SortStrategy {
     }
 
     private int partition(int[] array, int p, int q) {
-        int pivotIndex = pickPivot(p, q);
-        int pivotValue = array[pivotIndex];
-        int i = p;
-        int j = q;
-        // 从头到尾遍历并交换
-        while (i != j){
-            if (array[i] <= pivotValue){
-                i++;
-                continue;
+        if(p < q){
+            int pivotIndex = pickPivot(p, q);
+            int pivotValue = array[pivotIndex];
+            swap(array, pivotIndex, q);
+            int swapIndex = p;
+            for(int i = p;i <= q;++i){
+                int curValue = array[i];
+                if(curValue < pivotValue){
+                    swap(array, swapIndex, i);
+                    swapIndex++;
+                }
             }
-            if (array[j] >= pivotValue){
-                j--;
-                continue;
-            }
-            if(array[i] > pivotValue && array[j] < pivotValue){
-                int tmp = array[i];
-                array[i] = array[j];
-                array[j] = tmp;
-            }
+            swap(array, swapIndex, q);
+            return swapIndex;
         }
-        // set pivotValue to correct index and get that index
-        int correctIndex;
-        if(i > pivotIndex){
-            if(array[i] > pivotValue){
-                correctIndex = i -1;
-            }else{
-                correctIndex = i;
-            }
-        }else if(i < pivotIndex){
-            if (array[i] > pivotValue){
-                correctIndex = i;
-            }else{
-                correctIndex = i + 1;
-            }
-        }else{
-            correctIndex = i;
-        }
-        int tmp = array[correctIndex];
-        array[correctIndex] = pivotValue;
-        array[pivotIndex] = tmp;
-        return correctIndex;
+        return p;
+    }
+
+    private static void swap(int[] array, int x, int y){
+        int tmp = array[x];
+        array[x] = array[y];
+        array[y] = tmp;
     }
 
     private static int pickPivot(int start, int end){
