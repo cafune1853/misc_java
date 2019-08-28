@@ -3,20 +3,55 @@ package com.doggy.jsonserialize;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
+import com.google.gson.*;
 import com.google.gson.annotations.SerializedName;
 
 import lombok.Getter;
 import lombok.ToString;
 
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+
 public class Test {
 	public static void main(String[] args) throws Exception {
+		GsonBuilder gsonBuilder = new GsonBuilder();
+		gsonBuilder.registerTypeAdapter(Double.class,  new JsonSerializer<Double>() {
+			@Override
+			public JsonElement serialize(final Double src, final Type typeOfSrc, final JsonSerializationContext context) {
+				if(src == null){
+					return null;
+				}
+
+				BigDecimal plainExpressionBigDecimal = new BigDecimal(src){
+					@Override
+					public String toString() {
+						return super.toPlainString();
+					}
+				};
+				return new JsonPrimitive(plainExpressionBigDecimal);
+			}
+		});
+
+		T t = new T();
+//		t.d = 1000000000000.0D;
+
+		Gson gson = gsonBuilder.create();
+		Map<String, Double>  map = new HashMap<>();
+		map.put("1", 100000000000000D);
+
+
+
+		System.out.println(gson.toJson(map));
+
+
 		Person person = new Person("doggy", 23, Person.E.E2);
 		/**
 		 * Gson序列化最为宽松，不要求类的可访问性以及不要求类提供可访问的构造器（通过调用setAccessible绕过）
 		 * 也不需要getter && setter方法
 		 */
-		Gson gson = new Gson();
+//		Gson gson = new Gson();
 		System.out.println(gson.toJson(person));
 		System.out.println(gson.fromJson("{\"name\":\"doggy\",\"age\":23,\"e\":\"2\"}", Person.class));
 		
@@ -66,5 +101,9 @@ public class Test {
 				this.type = type;
 			}
 		}
+	}
+
+	public static class T{
+		private Double d;
 	}
 }
