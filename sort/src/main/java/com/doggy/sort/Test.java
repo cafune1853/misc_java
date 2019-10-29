@@ -11,6 +11,7 @@ public class Test {
         testArraySort(new MergeSortStrategy());
         testArraySort(new QuickSortStrategy1());
         testArraySort(new QuickSortStrategy2());
+        testArraySort(new HeapSort());
     }
 
     public static void testArraySort(SortStrategy sortStrategy){
@@ -19,6 +20,8 @@ public class Test {
         testOneArraySort(new int[]{}, sortStrategy, new int[]{});
         testOneArraySort(new int[]{1}, sortStrategy, new int[]{1});
         testOneArraySort(new int[]{2, 1}, sortStrategy, new int[]{1, 2});
+        testOneArraySort(new int[]{-1, 2, 1}, sortStrategy, new int[]{-1, 1, 2});
+        testOneArraySort(new int[]{-1, 9, 1, 1}, sortStrategy, new int[]{-1, 1, 1, 9});
     }
 
     private static void testOneArraySort(int[] array, SortStrategy sortStrategy, int[] expectArray) {
