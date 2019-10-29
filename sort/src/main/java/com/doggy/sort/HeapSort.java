@@ -15,16 +15,9 @@ public class HeapSort implements SortStrategy {
         public Heap(int[] array) {
             this.array = array;
             this.maxHeapSize = array.length;
-            // 初始堆化
+            // 初始堆化,这里采用从第一个父节点开始，往下
             for (int i = maxHeapSize/2 - 1; i >= 0 ; i--) {
-                int left = i * 2 + 1;
-                if(left <= maxHeapSize - 1 && array[left] > array[i]){
-                    swap(array, i, left);
-                }
-                int right = i * 2 + 2;
-                if (right <= maxHeapSize - 1 && array[right] > array[i]){
-                    swap(array, i, right);
-                }
+                sinkDown(maxHeapSize, i);
             }
         }
 
@@ -36,25 +29,33 @@ public class HeapSort implements SortStrategy {
                     array[currentHeapSize - 1] = array[0];
                     array[0] = temp;
                     currentHeapSize--;
-                    int start = 0;
-                    while (start * 2 + 1 <= currentHeapSize - 1){
-                        int next = -1;
-                        if(array[start * 2 + 1] > array[start]){
-                            swap(array, start*2+1, start);
-                            next = start * 2 + 1;
-                        }
-                        if(start * 2 + 2 <= currentHeapSize - 1 && array[start * 2 + 2] > array[start]) {
-                            swap(array, start * 2 + 2, start);
-                            next = start * 2 + 2;
-                        }
-                        if(next == -1){
-                            break;
-                        }
-                        start = next;
-                    }
+                    sinkDown(currentHeapSize, 0);
                 }
             }
         }
+
+        private void sinkDown(int currentHeapSize, int parentIndex) {
+            int left = parentIndex * 2 + 1;
+            int right = parentIndex * 2 + 2;
+            while (left <= currentHeapSize - 1){
+                int nextParentIndex = -1;
+                if(array[left] > array[parentIndex]){
+                    swap(array, left, parentIndex);
+                    nextParentIndex = left;
+                }
+                if(right <= currentHeapSize - 1 && array[right] > array[parentIndex]) {
+                    swap(array, right, parentIndex);
+                    nextParentIndex = right;
+                }
+                if(nextParentIndex == -1){
+                    break;
+                }
+                parentIndex = nextParentIndex;
+                left = parentIndex * 2 + 1;
+                right = parentIndex * 2 + 2;
+            }
+        }
+
         private void swap(int array[], int i, int j){
             int temp = array[i];
             array[i] = array[j];
