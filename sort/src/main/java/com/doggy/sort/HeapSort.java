@@ -34,25 +34,25 @@ public class HeapSort implements SortStrategy {
             }
         }
 
-        private void sinkDown(int currentHeapSize, int parentIndex) {
-            int left = parentIndex * 2 + 1;
-            int right = parentIndex * 2 + 2;
-            while (left <= currentHeapSize - 1){
-                int nextParentIndex = -1;
-                if(array[left] > array[parentIndex]){
-                    swap(array, left, parentIndex);
-                    nextParentIndex = left;
+        private void sinkDown(int currentHeapSize, int startIndex) {
+            int leftChildIndex = startIndex * 2 + 1;
+            int rightChildIndex = startIndex * 2 + 2;
+            while (leftChildIndex <= currentHeapSize - 1){
+                int nextStartIndex = -1;
+                if(array[leftChildIndex] > array[startIndex]){
+                    swap(array, leftChildIndex, startIndex);
+                    nextStartIndex = leftChildIndex;
                 }
-                if(right <= currentHeapSize - 1 && array[right] > array[parentIndex]) {
-                    swap(array, right, parentIndex);
-                    nextParentIndex = right;
+                if(rightChildIndex <= currentHeapSize - 1 && array[rightChildIndex] > array[startIndex]) {
+                    swap(array, rightChildIndex, startIndex);
+                    nextStartIndex = rightChildIndex;
                 }
-                if(nextParentIndex == -1){
+                if(nextStartIndex == -1){
                     break;
                 }
-                parentIndex = nextParentIndex;
-                left = parentIndex * 2 + 1;
-                right = parentIndex * 2 + 2;
+                startIndex = nextStartIndex;
+                leftChildIndex = startIndex * 2 + 1;
+                rightChildIndex = startIndex * 2 + 2;
             }
         }
 
