@@ -11,15 +11,16 @@ public class Heap<T extends Comparable<? super T>> {
 		MAX, MIN
 	}
 
-	/** 堆的整体大小 **/
-	private final int maxSize;
-	private List<T> values;
-	private int lastElementIndex = -1;
+    private List<T> values;
+    /** 堆的整体大小 **/
+	private final int maxHeapSize;
+    private int currentHeapSize;
 	private HeapType heapType;
 
-	public Heap(int maxSize, HeapType heapType) {
-		this.maxSize = maxSize;
+	public Heap(int maxHeapSize, HeapType heapType) {
+		this.maxHeapSize = maxHeapSize;
 		this.heapType = heapType;
+		this.currentHeapSize = 0;
         values = new ArrayList<>();
 	}
 	
@@ -27,11 +28,11 @@ public class Heap<T extends Comparable<? super T>> {
 	    if(isEmpty()){
 	        return null;
         }else{
-            swap(0,lastElementIndex);
-            T max = values.get(lastElementIndex);
-            values.set(lastElementIndex,null);
+            swap(0, currentHeapSize - 1);
+            T max = values.get(currentHeapSize - 1);
+            values.set(currentHeapSize - 1,null);
+            currentHeapSize--;
             sinkDown(0);
-            lastElementIndex--;
             return max;
         }
     }
@@ -40,9 +41,9 @@ public class Heap<T extends Comparable<? super T>> {
         if(isFull()){
             return false;
         }
-        lastElementIndex++;
+        currentHeapSize++;
         values.add(val);
-        flowUp(lastElementIndex);
+        flowUp(currentHeapSize - 1);
         return true;
     }
     
@@ -63,32 +64,43 @@ public class Heap<T extends Comparable<? super T>> {
         }
     }
 
-	public void sinkDown(int x) {
+	public void sinkDown(int currentIndex) {
 		if (heapType == HeapType.MAX) {
-            int rightIndex = getRightIndex(x);
-            int leftIndex = getLeftIndex(x);
-            int hitIndex = -1;
-            if(leftIndex != -1){
-                hitIndex = leftIndex;
-                if(rightIndex != -1 && values.get(leftIndex).compareTo(values.get(rightIndex)) < 0){
-                    hitIndex = rightIndex;
+            int rightIndex = getRightIndex(currentIndex);
+            int leftIndex = getLeftIndex(currentIndex);
+            while (leftIndex != -1){
+                int nextIndex = -1;
+                if(values.get(leftIndex).compareTo(values.get(currentIndex)) > 0){
+                    nextIndex = leftIndex;
                 }
-                if(values.get(x).compareTo(values.get(hitIndex)) < 0){
-                    swap(x,hitIndex);
+                if(rightIndex != -1 && values.get(rightIndex).compareTo(values.get(currentIndex)) > 0){
+                    nextIndex = rightIndex;
                 }
+                if(nextIndex == -1){
+                    break;
+                }
+                swap(currentIndex, nextIndex);
+                currentIndex = nextIndex;
+                leftIndex = getLeftIndex(currentIndex);
+                rightIndex = getRightIndex(currentIndex);
             }
 		}else{
-            int rightIndex = getRightIndex(x);
-            int leftIndex = getLeftIndex(x);
-            int hitIndex = -1;
-            if(leftIndex != -1){
-                hitIndex = leftIndex;
-                if(rightIndex != -1 && values.get(leftIndex).compareTo(values.get(rightIndex)) > 0){
-                    hitIndex = rightIndex;
+            int rightIndex = getRightIndex(currentIndex);
+            int leftIndex = getLeftIndex(currentIndex);
+            while (leftIndex != -1){
+                int nextIndex = -1;
+                if(values.get(leftIndex).compareTo(values.get(currentIndex)) < 0){
+                    nextIndex = leftIndex;
                 }
-                if(values.get(x).compareTo(values.get(hitIndex)) > 0){
-                    swap(x,hitIndex);
+                if(rightIndex != -1 && values.get(rightIndex).compareTo(values.get(currentIndex)) < 0){
+                    nextIndex = rightIndex;
                 }
+                if(nextIndex == -1){
+                    break;
+                }
+                currentIndex = nextIndex;
+                leftIndex = getLeftIndex(currentIndex);
+                rightIndex = getRightIndex(currentIndex);
             }
         }
 	}
@@ -102,7 +114,7 @@ public class Heap<T extends Comparable<? super T>> {
 	private int getLeftIndex(int root){
 	    int ret = -1;
         if(hasLeftChild(root)){
-            ret = root * 2 - 1;
+            ret = root * 2 + 1;
         }
         return ret;
     }
@@ -110,31 +122,29 @@ public class Heap<T extends Comparable<? super T>> {
     private int getRightIndex(int root){
         int ret = -1;
         if(hasRightChild(root)){
-            ret = root * 2;
+            ret = root * 2 + 2;
         }
         return ret;
     }
     
     private int getParent(int c){
-        return (c+1)/2-1;
+        return (c + 1) / 2 - 1;
     }
 
 	private boolean isEmpty() {
-		return lastElementIndex == -1;
+		return currentHeapSize == 0;
 	}
 
 	private boolean isFull() {
-		return lastElementIndex == maxSize - 1;
+		return currentHeapSize == maxHeapSize;
 	}
 
 	private boolean hasLeftChild(int root) {
-		root++;
-		return root * 2 - 1 <= lastElementIndex;
+		return root * 2 + 1 <= currentHeapSize - 1;
 	}
 
 	private boolean hasRightChild(int root) {
-		root++;
-		return root * 2 <= lastElementIndex;
+		return root * 2 + 2 <= currentHeapSize - 1;
 	}
 
 	private boolean isRoot(int x) {

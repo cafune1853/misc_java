@@ -15,8 +15,8 @@ public class HeapSort implements SortStrategy {
         public Heap(int[] array) {
             this.array = array;
             this.maxHeapSize = array.length;
-            // 初始堆化,这里采用从第一个父节点开始，往下
-            for (int i = maxHeapSize/2 - 1; i >= 0 ; i--) {
+            // 初始堆化,这里采用从第一个有子节点的地方开始往上堆化
+            for (int i = (maxHeapSize + 1)/2 - 1; i >= 0 ; i--) {
                 sinkDown(maxHeapSize, i);
             }
         }
