@@ -1,6 +1,7 @@
 package com.doggy.datastructure;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -23,6 +24,18 @@ public class Heap<T extends Comparable<? super T>> {
 		this.currentHeapSize = 0;
         values = new ArrayList<>();
 	}
+
+	public T getTop(){
+	    if(isEmpty()){
+	        return null;
+        }
+	    return values.get(0);
+    }
+
+    public void replaceTopAndSinkDown(T newToReplaceTop){
+	    values.set(0, newToReplaceTop);
+	    sinkDown(0);
+    }
 	
 	public T popTop(){
 	    if(isEmpty()){
@@ -98,12 +111,21 @@ public class Heap<T extends Comparable<? super T>> {
                 if(nextIndex == -1){
                     break;
                 }
+                swap(currentIndex, nextIndex);
                 currentIndex = nextIndex;
                 leftIndex = getLeftIndex(currentIndex);
                 rightIndex = getRightIndex(currentIndex);
             }
         }
 	}
+
+	public void print(){
+        for (T value : values) {
+            System.out.print(value);;
+            System.out.print(", ");
+        }
+        System.out.println();
+    }
 	
 	private void swap(int x,int y){
 	    T tmp = values.get(x);
@@ -139,12 +161,12 @@ public class Heap<T extends Comparable<? super T>> {
 		return currentHeapSize == maxHeapSize;
 	}
 
-	private boolean hasLeftChild(int root) {
-		return root * 2 + 1 <= currentHeapSize - 1;
+	private boolean hasLeftChild(int parent) {
+		return parent * 2 + 1 <= currentHeapSize - 1;
 	}
 
-	private boolean hasRightChild(int root) {
-		return root * 2 + 2 <= currentHeapSize - 1;
+	private boolean hasRightChild(int parent) {
+		return parent * 2 + 2 <= currentHeapSize - 1;
 	}
 
 	private boolean isRoot(int x) {
@@ -152,15 +174,39 @@ public class Heap<T extends Comparable<? super T>> {
 	}
     
     public static void main(String[] args) {
-        Heap<String> maxHeap = new Heap<>(5, HeapType.MAX);
-        maxHeap.insertOne("a");
-        maxHeap.insertOne("b");
-        maxHeap.insertOne("c");
-        maxHeap.insertOne("d");
-        maxHeap.insertOne("e");
-        String x;
+	    List<Integer> list = new ArrayList<>();
+	    list.add(1);
+	    list.add(2);
+	    list.add(5);
+	    list.add(3);
+	    list.add(-1);
+	    list.add(9);
+	    topK(list, 3);
+        Heap<Integer> maxHeap = new Heap<>(5, HeapType.MAX);
+        maxHeap.insertOne(1);
+        maxHeap.insertOne(2);
+        maxHeap.insertOne(3);
+        maxHeap.insertOne(5);
+        maxHeap.insertOne(-1);
+        maxHeap.insertOne(9);
+        Integer x;
         while((x = maxHeap.popTop()) != null){
             System.out.println(x);
         }
+    }
+
+    public static void topK(List<Integer> input, int topK){
+	    Heap<Integer> minHeap = new Heap<>(topK, HeapType.MIN);
+        for (Integer number : input) {
+            if(!minHeap.isFull()){
+                minHeap.insertOne(number);
+            }else{
+                Integer topNum = minHeap.getTop();
+                if(number > topNum){
+                    minHeap.replaceTopAndSinkDown(number);
+                }
+            }
+        }
+        minHeap.print();
     }
 }
