@@ -24,6 +24,7 @@
     </build>
     <modules>
         <module>aqs</module>
+        <module>algorithm</module>
         <module>byteserialize</module>
         <module>concurrency</module>
         <module>disruptor</module>
