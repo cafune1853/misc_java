@@ -43,7 +43,7 @@ public class StringMatch {
         private int[] calculateNext(CharSequence matchSeq){
             int[] next = new int[matchSeq.length()];
             next[0] = -1;
-            for (int i = 1; i < matchSeq.length(); i++) {
+            for (int i = 1; i < matchSeq.length() - 1; i++) {
                 // 表示当前最长子前缀
                 int k = next[i - 1];
                 while (k != -1 && matchSeq.charAt(k + 1) != matchSeq.charAt(i)){
