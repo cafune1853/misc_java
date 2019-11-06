@@ -6,6 +6,7 @@ public class StringMatch {
     public static void main(String[] args) {
         checkStrategy(new BruteForceMatchStrategy(), "xxxxabxxxxxddddcabcab", "cabcab", 15);
         checkStrategy(new BoyerMooreMatchStrategy(), "xxxxabxxxxxddddcabcab", "cabcab", 15);
+        checkStrategy(new KMPMatchStrategy(), "xxxxabxxxxxddddcabcab", "cabcab", 15);
     }
 
     private static void checkStrategy(StringMatchStrategy strategy, CharSequence source, CharSequence match, int expectIndex){
@@ -37,7 +38,21 @@ public class StringMatch {
         }
 
         private int[] calculateNext(CharSequence matchSeq){
-            return null;
+            int[] next = new int[matchSeq.length()];
+            next[0] = -1;
+            for (int i = 1; i < matchSeq.length(); i++) {
+                // 表示当前最长子前缀
+                int k = next[i - 1];
+                while (k != -1 && matchSeq.charAt(k + 1) != matchSeq.charAt(i)){
+                    k = next[k];
+                }
+                if(matchSeq.charAt(k + 1) == matchSeq.charAt(i)){
+                    next[i] = k + 1;
+                }else{
+                    next[i] = matchSeq.charAt(0) == matchSeq.charAt(i) ? 0 : -1;
+                }
+            }
+            return next;
         }
     }
 
