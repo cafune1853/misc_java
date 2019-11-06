@@ -153,7 +153,7 @@ public class StringMatch {
             if(suffix[mMatchedLength] != -1){
                 return m - mMatchedLength - suffix[mMatchedLength];
             }else{
-                for (int i = mMatchedLength; i >= 1; i--) {
+                for (int i = mMatchedLength - 1; i >= 1; i--) {
                     if(matchHead[i]){
                         return m - i;
                     }
