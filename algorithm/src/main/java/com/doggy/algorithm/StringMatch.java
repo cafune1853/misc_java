@@ -18,6 +18,9 @@ public class StringMatch {
         }
     }
 
+    /**
+     * KMP策略，实际上采用好前缀的思想，其从前往后匹配，直到出现坏字符停下来。之前已匹配的部分称为好前缀。
+     */
     private static class KMPMatchStrategy implements StringMatchStrategy{
         @Override
         public int indexOf(CharSequence fullSeq, CharSequence matchSeq) {
