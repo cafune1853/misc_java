@@ -10,6 +10,7 @@ public class SimpleRegexMatch {
         System.out.println(isMatch("xxx*", "*?"));
         System.out.println(isMatch("xxx*", "*?x"));
         System.out.println(isMatch("xxx*xy", "*?x?"));
+        System.out.println(isMatch("xxx*xy", "xxx???"));
     }
 
     public static boolean isMatch(String stringToMatch, String regex){
