@@ -15,7 +15,7 @@
       "settings": {
         "vnext": [
           {
-            "address": "server",
+            "address": "127.0.0.1",
             "port": 20012,
             "users": [
               {
@@ -26,14 +26,15 @@
               }
             ]
           }
-        ],
-        "streamSettings": {
-          "quicSettings": {
-            "security": "aes-128-gcm",
-            "key": "f03328b1-b61b-4611-ad6c-194b328b18cc",
-            "header": {
-              "type": "wechat-video"
-            }
+        ]
+      },
+      "streamSettings": {
+        "network": "quic",
+        "quicSettings": {
+          "security": "aes-128-gcm",
+          "key": "f03328b1-b61b-4611-ad6c-194b328b18cc",
+          "header": {
+            "type": "wechat-video"
           }
         }
       }

@@ -1,12 +1,12 @@
 {
   "log": {
-    "access": "/tmp/v2ray/app.log",
-    "error": "/tmp/v2ray/error.log",
+    "access": "/tmp/v2ray-app.log",
+    "error": "/tmp/v2ray-error.log",
     "loglevel": "warning"
   },
   "inbounds": [
     {
-      "tag": "vmessBaseOnKcp",
+      "tag": "vmessOverKcp",
       "port": 20011,
       "protocol": "vmess",
       "settings": {
@@ -20,6 +20,7 @@
         ]
       },
       "streamSettings": {
+        "network": "kcp",
         "kcpSettings": {
           "mtu": 1350,
           "tti": 20,
@@ -35,7 +36,7 @@
       }
     },
     {
-      "tag": "vmessBaseOnQuic",
+      "tag": "vmessOverQuic",
       "port": 20012,
       "protocol": "vmess",
       "settings": {
@@ -49,6 +50,7 @@
         ]
       },
       "streamSettings": {
+        "network": "quic",
         "quicSettings": {
           "security": "aes-128-gcm",
           "key": "f03328b1-b61b-4611-ad6c-194b328b18cc",

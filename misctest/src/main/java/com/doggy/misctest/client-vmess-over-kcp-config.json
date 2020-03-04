@@ -1,0 +1,48 @@
+{
+  "inbounds": [
+    {
+      "protocol": "socks",
+      "ip": "127.0.0.1",
+      "port": "10801",
+      "auth": "noauth",
+      "accounts": [],
+      "udp": true
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "vmess",
+      "settings": {
+        "vnext": [
+          {
+            "address": "127.0.0.1",
+            "port": 20011,
+            "users": [
+              {
+                "id": "f03328b1-b61b-4611-ad6c-194b328b18cc",
+                "alterId": 4,
+                "security": "auto",
+                "level": 0
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "kcp",
+        "kcpSettings": {
+          "mtu": 1350,
+          "tti": 20,
+          "uplinkCapacity": 20,
+          "downlinkCapacity": 100,
+          "congestion": true,
+          "readBufferSize": 2,
+          "writeBufferSize": 2,
+          "header": {
+            "type": "wechat-video"
+          }
+        }
+      }
+    }
+  ]
+}
