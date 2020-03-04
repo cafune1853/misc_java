@@ -1,0 +1,68 @@
+{
+  "log": {
+    "access": "/tmp/v2ray/app.log",
+    "error": "/tmp/v2ray/error.log",
+    "loglevel": "warning"
+  },
+  "inbounds": [
+    {
+      "tag": "vmessBaseOnKcp",
+      "port": 20011,
+      "protocol": "vmess",
+      "settings": {
+        "clients": [
+          {
+            "id": "f03328b1-b61b-4611-ad6c-194b328b18cc",
+            "alterId": 4,
+            "security": "auto",
+            "level": 0
+          }
+        ]
+      },
+      "streamSettings": {
+        "kcpSettings": {
+          "mtu": 1350,
+          "tti": 20,
+          "uplinkCapacity": 20,
+          "downlinkCapacity": 100,
+          "congestion": true,
+          "readBufferSize": 2,
+          "writeBufferSize": 2,
+          "header": {
+            "type": "wechat-video"
+          }
+        }
+      }
+    },
+    {
+      "tag": "vmessBaseOnQuic",
+      "port": 20012,
+      "protocol": "vmess",
+      "settings": {
+        "clients": [
+          {
+            "id": "f03328b1-b61b-4611-ad6c-194b328b18cc",
+            "alterId": 4,
+            "security": "none",
+            "level": 0
+          }
+        ]
+      },
+      "streamSettings": {
+        "quicSettings": {
+          "security": "aes-128-gcm",
+          "key": "f03328b1-b61b-4611-ad6c-194b328b18cc",
+          "header": {
+            "type": "wechat-video"
+          }
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {}
+    }
+  ]
+}
