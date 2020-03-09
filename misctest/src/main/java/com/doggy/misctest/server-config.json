@@ -6,43 +6,13 @@
   },
   "inbounds": [
     {
-      "tag": "vmessOverKcp",
+      "tag": "vmessOverQuic",
       "port": 20011,
       "protocol": "vmess",
       "settings": {
         "clients": [
           {
-            "id": "f03328b1-b61b-4611-ad6c-194b328b18cc",
-            "alterId": 4,
-            "security": "auto",
-            "level": 0
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "kcp",
-        "kcpSettings": {
-          "mtu": 1350,
-          "tti": 20,
-          "uplinkCapacity": 20,
-          "downlinkCapacity": 100,
-          "congestion": true,
-          "readBufferSize": 2,
-          "writeBufferSize": 2,
-          "header": {
-            "type": "wechat-video"
-          }
-        }
-      }
-    },
-    {
-      "tag": "vmessOverQuic",
-      "port": 20012,
-      "protocol": "vmess",
-      "settings": {
-        "clients": [
-          {
-            "id": "f03328b1-b61b-4611-ad6c-194b328b18cc",
+            "id": "8b0dfd6e-7a5b-49d7-bae4-8dcdafea1da0",
             "alterId": 4,
             "security": "none",
             "level": 0
@@ -53,7 +23,7 @@
         "network": "quic",
         "quicSettings": {
           "security": "aes-128-gcm",
-          "key": "f03328b1-b61b-4611-ad6c-194b328b18cc",
+          "key": "8b0dfd6e-7a5b-49d7-bae4-8dcdafea1da0",
           "header": {
             "type": "wechat-video"
           }
