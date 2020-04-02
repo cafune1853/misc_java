@@ -1,6 +1,5 @@
 package com.doggy.concurrency;
 
-import sun.misc.Contended;
 
 /**
  * Created by huangzhw on 2016/11/29.
@@ -56,7 +55,6 @@ public class FalseSharing implements Runnable{
 		protected long p9, p10, p11, p12, p13, p14;
 		protected long p15;
 	}
-	@Contended
 	public final static class ValueNoPadding {
 		// protected long p1, p2, p3, p4, p5, p6, p7;
 		protected volatile long value = 0L;
